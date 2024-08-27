@@ -3,6 +3,7 @@ package br.com.dieyteixeira.projetoia.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,15 +11,23 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import br.com.dieyteixeira.projetoia.models.Chat
 import br.com.dieyteixeira.projetoia.ui.theme.AzulC_Balao
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ChatComponent(message: Chat) {
@@ -29,32 +38,50 @@ fun ChatComponent(message: Chat) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
 
+    // Formatando a data/hora
+    val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val formattedTime = dateFormat.format(Date(message.timestamp)) // Supondo que `timestamp` seja um long
+
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 15.dp),
         horizontalArrangement = alinhamento
     ) {
-        Box(
-            modifier = Modifier
-                .padding(8.dp)
-                .background(
-                    color = corDoFundo,
-                    shape = messageBubbleShape(message.isSentByUser)
-                )
-                .widthIn(max = screenWidth * 0.8f)
-                .padding(8.dp)
-        ) {
-            if (message.isSentByUser) {
-                Text(
-                    text = message.content,
-                    color = corDoTexto,
-                    modifier = Modifier.padding(5.dp)
-                )
-            } else {
-                TypewriterText(
-                    text = message.content,
-                    textColor = corDoTexto,
-                    modifier = Modifier.padding(5.dp)
-                )
+        Column {
+            Text(
+                text = formattedTime,
+                style = TextStyle(
+                    color = Color.LightGray,
+                    fontSize = 15.sp
+                ),
+                modifier = Modifier
+                    .padding(start = 5.dp, end = 5.dp, bottom = 2.dp, top = 2.dp)
+                    .align(alignment = if (message.isSentByUser) Alignment.End else Alignment.Start)
+            )
+            Box(
+                modifier = Modifier
+//                    .padding(start = 8.dp, end = 8.dp, top = 5.dp, bottom = 5.dp)
+                    .background(
+                        color = corDoFundo,
+                        shape = messageBubbleShape(message.isSentByUser)
+                    )
+                    .widthIn(max = screenWidth * 0.8f)
+                    .padding(start = 8.dp, end = 8.dp, top = 5.dp, bottom = 5.dp)
+            ) {
+                if (message.isSentByUser) {
+                    Text(
+                        text = message.content,
+                        color = corDoTexto,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                } else {
+                    TypewriterText(
+                        text = message.content,
+                        textColor = corDoTexto,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                }
             }
         }
     }
