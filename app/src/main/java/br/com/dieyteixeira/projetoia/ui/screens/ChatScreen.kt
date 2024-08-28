@@ -35,14 +35,13 @@ fun ChatScreen(
     chatViewModel: ChatViewModel = viewModel()
 ) {
     val messages by remember { mutableStateOf(chatViewModel.messages) }
+    val uiState by chatViewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(messages) {
-        coroutineScope.launch {
-            listState.scrollToItem(messages.size - 1)
-        }
+    LaunchedEffect(messages.size) {
+        listState.animateScrollToItem(messages.size - 1)
     }
 
     Column(modifier = Modifier.fillMaxSize()) {

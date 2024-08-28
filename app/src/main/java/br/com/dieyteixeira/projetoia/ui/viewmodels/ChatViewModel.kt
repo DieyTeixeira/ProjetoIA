@@ -10,6 +10,7 @@ import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -19,6 +20,7 @@ class ChatViewModel : ViewModel() {
     val messages: List<Chat> = _messages
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Initial)
+    val uiState: StateFlow<UiState> get() = _uiState
 
     private val generativeModel = GenerativeModel(
         modelName = "gemini-1.5-flash",
