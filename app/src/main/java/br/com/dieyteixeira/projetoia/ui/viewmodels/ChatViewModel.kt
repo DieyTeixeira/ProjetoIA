@@ -1,5 +1,6 @@
 package br.com.dieyteixeira.projetoia.ui.viewmodels
 
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,16 +17,38 @@ import kotlinx.coroutines.withContext
 
 class ChatViewModel : ViewModel() {
 
+    var selectedOption by mutableStateOf("Flash")
+        private set
+
+    private val _switchState = MutableStateFlow(false)
+    val switchState: StateFlow<Boolean> = _switchState
+    fun setSwitchState(state: Boolean) {
+        _switchState.value = state
+        updateSelectedOption(if (state) "Pro" else "Flash")
+    }
+
     private val _messages = mutableStateListOf<Chat>()
     val messages: List<Chat> = _messages
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Initial)
     val uiState: StateFlow<UiState> get() = _uiState
 
+    private var _geminiStile = mutableStateOf(getGeminiStyle(selectedOption))
+    val geminiStile: String get() = _geminiStile.value
+
     private val generativeModel = GenerativeModel(
-        modelName = "gemini-1.5-flash",
+        modelName = geminiStile,
         apiKey = BuildConfig.apiKey
     )
+
+    private fun getGeminiStyle(option: String): String {
+        return if (option == "Flash") "gemini-1.5-flash" else "gemini-1.5-pro"
+    }
+
+    fun updateSelectedOption(option: String) {
+        selectedOption = option
+        _geminiStile.value = getGeminiStyle(option)
+    }
 
     fun sendMessage(content: String) {
         _messages.add(Chat(content = content, isSentByUser = true))
@@ -56,5 +79,6 @@ class ChatViewModel : ViewModel() {
                 _uiState.value = UiState.Error(e.localizedMessage ?: "Erro desconhecido")
             }
         }
+        Log.e("ChatViewModel", "opções: $geminiStile $selectedOption")
     }
 }

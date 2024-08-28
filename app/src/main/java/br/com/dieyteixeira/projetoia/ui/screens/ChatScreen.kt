@@ -20,14 +20,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import br.com.dieyteixeira.projetoia.R
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.dieyteixeira.projetoia.ui.components.ChatComponent
 import br.com.dieyteixeira.projetoia.ui.theme.Azul
 import br.com.dieyteixeira.projetoia.ui.theme.AzulCabecalho
 import br.com.dieyteixeira.projetoia.ui.viewmodels.ChatViewModel
+import br.com.dieyteixeira.projetoia.ui.components.SwitchButton
 import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,20 +40,28 @@ fun ChatScreen(
     chatViewModel: ChatViewModel = viewModel()
 ) {
     val messages by remember { mutableStateOf(chatViewModel.messages) }
+    val geminiStile by remember { mutableStateOf(chatViewModel.geminiStile) }
     val uiState by chatViewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
+    val switchState by chatViewModel.switchState.collectAsState()
+    var expanded by remember { mutableStateOf(false) }
+    val selectedOption by remember { derivedStateOf { chatViewModel.selectedOption } }
 
     LaunchedEffect(messages.size) {
         listState.animateScrollToItem(messages.size - 1)
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 8.dp)
+    ) {
         Column (
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
+                .padding(top = 8.dp, start = 8.dp, end = 8.dp)
                 .background(
                     color = AzulCabecalho,
                     shape = RoundedCornerShape(
@@ -58,12 +71,12 @@ fun ChatScreen(
                         bottomEnd = 30.dp
                     )
                 )
-        ){
-            Row (
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 15.dp, vertical = 8.dp)
-            ){
+                    .padding(start = 15.dp, end = 15.dp, top = 8.dp)
+            ) {
                 Text(
                     text = "Chat IA",
                     style = MaterialTheme.typography.titleLarge,
@@ -72,6 +85,39 @@ fun ChatScreen(
                         .align(Alignment.CenterVertically),
                     color = Color.White
                 )
+                Column (
+                    modifier = Modifier
+                        .weight(2f)
+                        .align(Alignment.CenterVertically)
+                ) {
+                    Text(
+                        text = "Tipo de IA",
+                        style = TextStyle.Default.copy(
+                            fontSize = 14.sp,
+                            color = Color.White
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clickable(
+                                onClick = { expanded = !expanded }
+                            ),
+                        color = Color.White
+                    )
+                    Text(
+                        text = selectedOption,
+                        style = TextStyle.Default.copy(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clickable(
+                                onClick = { expanded = !expanded }
+                            ),
+                        color = Color.White
+                    )
+                }
                 Image(
                     painter = painterResource(id = R.drawable.logocodek_allwhite),
                     contentDescription = "Logo da IA",
@@ -81,6 +127,40 @@ fun ChatScreen(
                 )
             }
         }
+        if (expanded) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .align(Alignment.CenterHorizontally)
+                    .height(40.dp)
+                    .background(
+                        color = Color.LightGray,
+                        shape = RoundedCornerShape(
+                            topStart = 0.dp,
+                            bottomStart = 20.dp,
+                            topEnd = 0.dp,
+                            bottomEnd = 15.dp
+                        )
+                    )
+                    .padding(start = 15.dp, end = 15.dp)
+            ) {
+                SwitchButton(
+                    checkedThumbColor = AzulCabecalho, // Cor do thumb quando ativado
+                    uncheckedThumbColor = AzulCabecalho, // Cor do thumb quando desativado
+                    checkedTrackColor = Color.Transparent, // Cor do fundo quando ativado
+                    uncheckedTrackColor = Color.Transparent, // Cor do fundo quando desativado
+                    checkedBorderColor = Color.Transparent, // Remover contorno quando ativado
+                    uncheckedBorderColor = Color.Transparent, // Remover contorno quando desativado
+                    switchState = switchState,
+                    onSwitchChange = { state ->
+                        chatViewModel.setSwitchState(state)
+                        val option = if (state) "Pro" else "Flash"
+                        chatViewModel.updateSelectedOption(option)
+                    }
+                )
+            }
+        }
+
         // Lista de mensagens
         LazyColumn(
             modifier = Modifier
@@ -104,7 +184,10 @@ fun ChatScreen(
         ) {
             OutlinedTextField(
                 value = messageText,
-                onValueChange = { messageText = it },
+                onValueChange = {
+                    messageText = it
+                    expanded = false
+                },
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 30.dp),
