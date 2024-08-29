@@ -1,5 +1,10 @@
 package br.com.dieyteixeira.projetoia.ui.screens
 
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import androidx.compose.runtime.collectAsState
+import android.provider.MediaStore
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +13,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -18,6 +25,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -32,15 +42,17 @@ import br.com.dieyteixeira.projetoia.ui.theme.AzulCabecalho
 import br.com.dieyteixeira.projetoia.ui.viewmodels.ChatViewModel
 import br.com.dieyteixeira.projetoia.ui.components.SwitchButton
 import kotlinx.coroutines.launch
-
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    chatViewModel: ChatViewModel = viewModel()
+    chatViewModel: ChatViewModel = viewModel(),
+    onCaptureImage: () -> Unit
 ) {
+    val context = LocalContext.current
     val messages by remember { mutableStateOf(chatViewModel.messages) }
-    val geminiStile by remember { mutableStateOf(chatViewModel.geminiStile) }
     val uiState by chatViewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -48,6 +60,7 @@ fun ChatScreen(
     val switchState by chatViewModel.switchState.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     val selectedOption by remember { derivedStateOf { chatViewModel.selectedOption } }
+    val imageBitmap by chatViewModel.imageBitmap.collectAsState() // Estado para a imagem capturada
 
     LaunchedEffect(messages.size) {
         listState.animateScrollToItem(messages.size - 1)
@@ -175,6 +188,45 @@ fun ChatScreen(
 
         var messageText by rememberSaveable { mutableStateOf("") }
 
+        // Exibir imagem se estiver presente
+        imageBitmap?.let { bitmap ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .background(Color.LightGray, RoundedCornerShape(8.dp))
+            ) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "Imagem Capturada",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp) // Ajuste conforme necessário
+                        .padding(8.dp)
+                )
+//                Box(
+//                    modifier = Modifier
+//                        .size(24.dp)
+//                        .background(Color.White, shape = RoundedCornerShape(12.dp))
+//                        .align(Alignment.TopEnd)
+//                        .padding(top = 4.dp, end = 4.dp)
+//                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_close),
+                        contentDescription = "Remover Imagem",
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 4.dp, end = 4.dp)
+                            .size(16.dp)
+                            .clickable {
+                                chatViewModel.setImageBitmap(null)
+                            },
+                    colorFilter = ColorFilter.tint(Color.Gray)
+                    )
+//                }
+            }
+        }
+
         // Campo de texto e botão de envio
         Row(
             modifier = Modifier
@@ -204,6 +256,17 @@ fun ChatScreen(
                     unfocusedBorderColor = Color.Gray   // Cor da borda quando não está focado
                 ),
             )
+            Spacer(modifier = Modifier.width(8.dp))
+            Image(
+                imageVector = Icons.Filled.AddCircle,
+                contentDescription = "Anexar Imagem",
+                modifier = Modifier
+                    .size(35.dp)
+                    .clickable {
+                        onCaptureImage()
+                    }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Box(
                 modifier = Modifier
                     .height(55.dp)
@@ -218,9 +281,15 @@ fun ChatScreen(
                         .align(Alignment.Center)
                         .clickable {
                             if (messageText.isNotBlank()) {
-                                keyboardController?.hide()
-                                chatViewModel.sendMessage(messageText)
+                                imageBitmap?.let {
+                                    chatViewModel.sendMessage(
+                                        bitmap = it,
+                                        content = messageText
+                                    )
+                                }
                                 messageText = ""
+                                chatViewModel.setImageBitmap(null)
+                                keyboardController?.hide()
                             }
                         }
                 )

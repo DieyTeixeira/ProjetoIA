@@ -1,7 +1,14 @@
 package br.com.dieyteixeira.projetoia.ui.viewmodels
 
+import android.graphics.Bitmap
+import android.util.Base64
 import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.dieyteixeira.projetoia.BuildConfig
@@ -12,13 +19,18 @@ import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 
 class ChatViewModel : ViewModel() {
 
     var selectedOption by mutableStateOf("Flash")
         private set
+
+    private val _imageBitmap = MutableStateFlow<Bitmap?>(null)
+    val imageBitmap: StateFlow<Bitmap?> = _imageBitmap.asStateFlow()
 
     private val _switchState = MutableStateFlow(false)
     val switchState: StateFlow<Boolean> = _switchState
@@ -33,11 +45,11 @@ class ChatViewModel : ViewModel() {
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState.Initial)
     val uiState: StateFlow<UiState> get() = _uiState
 
-    private var _geminiStile = mutableStateOf(getGeminiStyle(selectedOption))
-    val geminiStile: String get() = _geminiStile.value
+    private var _geminiStyle = mutableStateOf(getGeminiStyle(selectedOption))
+    val geminiStyle: String get() = _geminiStyle.value
 
     private val generativeModel = GenerativeModel(
-        modelName = geminiStile,
+        modelName = geminiStyle,
         apiKey = BuildConfig.apiKey
     )
 
@@ -47,10 +59,14 @@ class ChatViewModel : ViewModel() {
 
     fun updateSelectedOption(option: String) {
         selectedOption = option
-        _geminiStile.value = getGeminiStyle(option)
+        _geminiStyle.value = getGeminiStyle(option)
     }
 
-    fun sendMessage(content: String) {
+    fun sendMessage(
+        bitmap: Bitmap? = null,
+        content: String
+    ) {
+
         _messages.add(Chat(content = content, isSentByUser = true))
         _uiState.value = UiState.Loading
 
@@ -67,6 +83,7 @@ class ChatViewModel : ViewModel() {
                 val response = withContext(Dispatchers.IO) {
                     generativeModel.generateContent(
                         content {
+                            bitmap?.let { image(it) }
                             text("Por favor, responda em português, considerando o histórico do chat: \n$chatHistory\nUsuário: $content")
                         }
                     )
@@ -79,6 +96,20 @@ class ChatViewModel : ViewModel() {
                 _uiState.value = UiState.Error(e.localizedMessage ?: "Erro desconhecido")
             }
         }
-        Log.e("ChatViewModel", "opções: $geminiStile $selectedOption")
+        Log.e("ChatViewModel", "opções: $geminiStyle $selectedOption")
+    }
+
+    fun setImageBitmap(bitmap: Bitmap?) {
+        _imageBitmap.value = bitmap
+    }
+
+    @Composable
+    fun ChatBubble(message: Chat) {
+        Column {
+            message.bitmap?.let { bitmap ->
+                Image(bitmap = bitmap.asImageBitmap(), contentDescription = null)
+            }
+            Text(text = message.content)
+        }
     }
 }

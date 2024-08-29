@@ -1,5 +1,7 @@
 package br.com.dieyteixeira.projetoia.ui.components
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,15 +9,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -42,12 +50,25 @@ fun ChatComponent(message: Chat) {
     val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     val formattedTime = dateFormat.format(Date(message.timestamp)) // Supondo que `timestamp` seja um long
 
+    // Obtendo a imagem do usuário (se disponível)
+    val userProfileImage: Bitmap? = message.bitmap
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 15.dp),
         horizontalArrangement = alinhamento
     ) {
+        if (!message.isSentByUser && userProfileImage != null) {
+            Image(
+                bitmap = userProfileImage.asImageBitmap(),
+                contentDescription = "User Profile Image",
+                modifier = Modifier
+                    .size(40.dp)
+                    .padding(end = 8.dp),
+                contentScale = ContentScale.Crop
+            )
+        }
         Column {
             Text(
                 text = formattedTime,
@@ -61,7 +82,6 @@ fun ChatComponent(message: Chat) {
             )
             Box(
                 modifier = Modifier
-//                    .padding(start = 8.dp, end = 8.dp, top = 5.dp, bottom = 5.dp)
                     .background(
                         color = corDoFundo,
                         shape = messageBubbleShape(message.isSentByUser)
