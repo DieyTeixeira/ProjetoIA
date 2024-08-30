@@ -1,23 +1,20 @@
 package br.com.dieyteixeira.projetoia.ui.screens
 
-import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.compose.runtime.collectAsState
-import android.provider.MediaStore
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -26,10 +23,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusState
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -39,14 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.dieyteixeira.projetoia.ui.components.ChatComponent
-import br.com.dieyteixeira.projetoia.ui.theme.Azul
 import br.com.dieyteixeira.projetoia.ui.theme.AzulCabecalho
 import br.com.dieyteixeira.projetoia.ui.viewmodels.ChatViewModel
 import br.com.dieyteixeira.projetoia.ui.components.SwitchButton
-import kotlinx.coroutines.launch
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import com.google.ai.client.generativeai.Chat
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +57,8 @@ fun ChatScreen(
     var expanded by remember { mutableStateOf(false) }
     val selectedOption by remember { derivedStateOf { chatViewModel.selectedOption } }
     val imageBitmap by chatViewModel.imageBitmap.collectAsState() // Estado para a imagem capturada
+
+    var showOptions by remember { mutableStateOf(false) }
 
     val isTextComplete by chatViewModel.isTextComplete.collectAsState(true)
 
@@ -205,13 +202,15 @@ fun ChatScreen(
 
         var messageText by rememberSaveable { mutableStateOf("") }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Exibir imagem se estiver presente
         imageBitmap?.let { bitmap ->
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp)
-                    .background(Color.LightGray, RoundedCornerShape(8.dp))
+                    .padding(start = 8.dp, end = 8.dp, bottom = 5.dp)
+                    .background(Color.LightGray, RoundedCornerShape(15.dp))
             ) {
                 Image(
                     bitmap = bitmap.asImageBitmap(),
@@ -221,18 +220,58 @@ fun ChatScreen(
                         .height(120.dp) // Ajuste conforme necessário
                         .padding(8.dp)
                 )
-                Image(
-                    painter = painterResource(id = R.drawable.ic_close),
-                    contentDescription = "Remover Imagem",
+                Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(top = 4.dp, end = 4.dp)
-                        .size(16.dp)
-                        .clickable {
-                            chatViewModel.setImageBitmap(null)
-                        },
-                    colorFilter = ColorFilter.tint(Color.Gray)
+                        .padding(top = 5.dp, end = 5.dp)
+                        .size(20.dp)
+                        .background(color = Color.Gray, shape = RoundedCornerShape(100))
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_close),
+                        contentDescription = "Remover Imagem",
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(12.dp)
+                            .clickable {
+                                chatViewModel.setImageBitmap(null)
+                            },
+                        colorFilter = ColorFilter.tint(Color.White)
+                    )
+                }
+            }
+        }
+        if (showOptions) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .padding(start = 8.dp, end = 8.dp, bottom = 5.dp)
+                    .background(Color.LightGray, RoundedCornerShape(15.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                FloatingActionButtons(
+                    onCaptureImage = onCaptureImage
                 )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 5.dp, end = 5.dp)
+                        .size(20.dp)
+                        .background(color = Color.Gray, shape = RoundedCornerShape(100))
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_close),
+                        contentDescription = "Remover Imagem",
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(12.dp)
+                            .clickable {
+                                showOptions = false
+                            },
+                        colorFilter = ColorFilter.tint(Color.White)
+                    )
+                }
             }
         }
 
@@ -245,13 +284,17 @@ fun ChatScreen(
         ) {
             OutlinedTextField(
                 value = messageText,
-                onValueChange = {
-                    messageText = it
-                    expanded = false
-                },
+                onValueChange = { messageText = it },
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words
+                ),
                 modifier = Modifier
                     .weight(1f)
-                    .heightIn(min = 30.dp),
+                    .heightIn(min = 30.dp)
+                    .onFocusChanged {
+                        showOptions = false
+                        expanded = false
+                    },
                 shape = RoundedCornerShape(30.dp),
                 placeholder = {
                     Text(
@@ -261,33 +304,35 @@ fun ChatScreen(
                     )
                 },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = Azul,  // Cor da borda ao focar
+                    focusedBorderColor = AzulCabecalho,  // Cor da borda ao focar
                     unfocusedBorderColor = Color.Gray   // Cor da borda quando não está focado
                 ),
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Image(
-                imageVector = Icons.Filled.AddCircle,
-                contentDescription = "Anexar Imagem",
-                modifier = Modifier
-                    .size(35.dp)
-                    .clickable {
-                        onCaptureImage()
-                    }
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
+            Spacer(modifier = Modifier.width(12.dp))
+            Row(
                 modifier = Modifier
                     .height(55.dp)
-                    .width(50.dp)
                     .align(Alignment.Bottom)
-            ){
+            ) {
                 Image(
-                    painter = painterResource(id = R.drawable.send_message),
+                    painter = painterResource(id = R.drawable.ic_anexo),
+                    contentDescription = "Anexar Imagem",
+                    modifier = Modifier
+                        .size(35.dp)
+                        .align(Alignment.CenterVertically)
+                        .clickable {
+                            showOptions = !showOptions
+                        },
+                    colorFilter = ColorFilter.tint(AzulCabecalho)
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+                Image(
+                    painter = painterResource(id = R.drawable.ic_send_message),
                     contentDescription = "Enviar",
                     modifier = Modifier
                         .size(35.dp)
-                        .align(Alignment.Center)
+                        .align(Alignment.CenterVertically)
                         .clickable {
                             if (messageText.isNotBlank()) {
                                 chatViewModel.sendMessage(
@@ -298,10 +343,73 @@ fun ChatScreen(
                                 chatViewModel.setImageBitmap(null)
                                 keyboardController?.hide()
                                 chatViewModel.setTextComplete(false)
+                                showOptions = false
+                                expanded = false
                             }
-                        }
+                        },
+                    colorFilter = ColorFilter.tint(AzulCabecalho)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun FloatingActionButtons(
+    onCaptureImage: () -> Unit
+) {
+    Row (
+        modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth(0.7f)
+            .padding(5.dp)
+            .zIndex(1f), // Coloca os botões sobre outros elementos
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .align(Alignment.CenterVertically)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_folder),
+                contentDescription = "Anexar do Arquivo",
+                modifier = Modifier
+                    .size(35.dp)
+                    .align(Alignment.CenterHorizontally),
+                colorFilter = ColorFilter.tint(Color.DarkGray)
+            )
+            Text(
+                text = "ARQUIVO",
+                fontSize = 14.sp,
+                color = Color.DarkGray,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .align(Alignment.CenterVertically)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_camera),
+                contentDescription = "Abrir Camera",
+                modifier = Modifier
+                    .size(34.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .clickable {
+                        onCaptureImage()
+                    },
+                colorFilter = ColorFilter.tint(Color.DarkGray)
+            )
+            Text(
+                text = "CÂMERA",
+                fontSize = 14.sp,
+                color = Color.DarkGray,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+            )
         }
     }
 }

@@ -28,12 +28,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 val imageBitmap = result.data?.extras?.get("data") as Bitmap
                 chatViewModel.setImageBitmap(imageBitmap) // Atualiza o ViewModel com a imagem capturada
             }
         }
+
         setContent {
             ProjetoIATheme {
                 Surface(
