@@ -29,7 +29,6 @@ fun TypewriterText(
         for (i in 0 until textLength) {
             delay(30)
             displayedText += textToDisplay[i]
-            Log.e("TypewriterText", "displayedText: $displayedText")
         }
         viewModel.setTextComplete(true) // Notifique que o texto está completo
     }

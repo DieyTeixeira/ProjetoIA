@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,6 +47,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import com.google.ai.client.generativeai.Chat
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,14 +63,21 @@ fun ChatScreen(
     val selectedOption by remember { derivedStateOf { chatViewModel.selectedOption } }
     val imageBitmap by chatViewModel.imageBitmap.collectAsState() // Estado para a imagem capturada
 
-    Log.e("ChatScreen", "messagesSize: ${messages.size}")
+    val isTextComplete by chatViewModel.isTextComplete.collectAsState(true)
 
-    // Rolar para o final da lista quando novas mensagens são adicionadas
-    LaunchedEffect(messages.size) {
+    LaunchedEffect(isTextComplete) {
         if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size)
+            if (!isTextComplete) {
+                while (!isTextComplete) {
+                    val maxIndex = messages.size + 2
+                    listState.animateScrollToItem(maxIndex)
+                    delay(200) // Rolagem a cada segundo
+                }
+            } else {
+                val maxIndex = messages.size
+                listState.animateScrollToItem(maxIndex)
+            }
         }
-        Log.e("ChatScreen", "entrou no launchedeffect")
     }
 
     Column(
@@ -288,6 +297,7 @@ fun ChatScreen(
                                 messageText = ""
                                 chatViewModel.setImageBitmap(null)
                                 keyboardController?.hide()
+                                chatViewModel.setTextComplete(false)
                             }
                         }
                 )

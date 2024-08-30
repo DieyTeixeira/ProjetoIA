@@ -100,20 +100,20 @@ fun ChatComponent(message: Chat, isLastMessage: Boolean, viewModel: ChatViewMode
                         )
                     }
                 } else {
-//                    if (isLastMessage) {
-//                        TypewriterText(
-//                            text = message.content,
-//                            textColor = corDoTexto,
-//                            modifier = Modifier.padding(5.dp),
-//                            viewModel = viewModel // Passe o ViewModel
-//                        )
-//                    } else {
+                    if (isLastMessage) {
+                        TypewriterText(
+                            text = message.content,
+                            textColor = corDoTexto,
+                            modifier = Modifier.padding(5.dp),
+                            viewModel = viewModel // Passe o ViewModel
+                        )
+                    } else {
                         Text(
                             text = message.content,
                             color = corDoTexto,
                             modifier = Modifier.padding(5.dp)
                         )
-//                    }
+                    }
                 }
             }
         }
