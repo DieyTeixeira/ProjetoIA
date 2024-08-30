@@ -2,6 +2,7 @@ package br.com.dieyteixeira.projetoia
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -24,6 +25,7 @@ import br.com.dieyteixeira.projetoia.ui.theme.ProjetoIATheme
 class MainActivity : ComponentActivity() {
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
+    private lateinit var galleryLauncher: ActivityResultLauncher<String>
     private val chatViewModel: ChatViewModel by viewModels() // Obtém a instância do ViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +38,14 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let {
+                val inputStream = contentResolver.openInputStream(it)
+                val imageBitmap = BitmapFactory.decodeStream(inputStream)
+                chatViewModel.setImageBitmap(imageBitmap)
+            }
+        }
+
         setContent {
             ProjetoIATheme {
                 Surface(
@@ -44,7 +54,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     ChatScreen(
                         chatViewModel = chatViewModel, // Passe o ViewModel para a ChatScreen
-                        onCaptureImage = { openCamera() }
+                        onCaptureImage = { openCamera() },
+                        onFindImage = { openGallery() }
                     )
                 }
             }
@@ -54,5 +65,9 @@ class MainActivity : ComponentActivity() {
     private fun openCamera() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         cameraLauncher.launch(intent)
+    }
+
+    private fun openGallery() {
+        galleryLauncher.launch("image/*")
     }
 }

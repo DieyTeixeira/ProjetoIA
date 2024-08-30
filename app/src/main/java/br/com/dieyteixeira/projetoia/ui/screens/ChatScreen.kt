@@ -48,7 +48,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun ChatScreen(
     chatViewModel: ChatViewModel = viewModel(),
-    onCaptureImage: () -> Unit
+    onCaptureImage: () -> Unit,
+    onFindImage: () -> Unit
 ) {
     val messages by remember { mutableStateOf(chatViewModel.messages) }
     val listState = rememberLazyListState()
@@ -218,6 +219,7 @@ fun ChatScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp) // Ajuste conforme necessário
+                        .widthIn(max = 300.dp)
                         .padding(8.dp)
                 )
                 Box(
@@ -251,7 +253,9 @@ fun ChatScreen(
                 contentAlignment = Alignment.Center
             ) {
                 FloatingActionButtons(
-                    onCaptureImage = onCaptureImage
+                    onCaptureImage = onCaptureImage,
+                    onFindImage = onFindImage,
+                    onFechar = { showOptions = false }
                 )
                 Box(
                     modifier = Modifier
@@ -286,7 +290,7 @@ fun ChatScreen(
                 value = messageText,
                 onValueChange = { messageText = it },
                 keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words
+                    capitalization = KeyboardCapitalization.Sentences
                 ),
                 modifier = Modifier
                     .weight(1f)
@@ -356,7 +360,9 @@ fun ChatScreen(
 
 @Composable
 fun FloatingActionButtons(
-    onCaptureImage: () -> Unit
+    onCaptureImage: () -> Unit,
+    onFindImage: () -> Unit,
+    onFechar: () -> Unit
 ) {
     Row (
         modifier = Modifier
@@ -376,7 +382,11 @@ fun FloatingActionButtons(
                 contentDescription = "Anexar do Arquivo",
                 modifier = Modifier
                     .size(35.dp)
-                    .align(Alignment.CenterHorizontally),
+                    .align(Alignment.CenterHorizontally)
+                    .clickable {
+                        onFindImage()
+                        onFechar()
+                    },
                 colorFilter = ColorFilter.tint(Color.DarkGray)
             )
             Text(
@@ -400,6 +410,7 @@ fun FloatingActionButtons(
                     .align(Alignment.CenterHorizontally)
                     .clickable {
                         onCaptureImage()
+                        onFechar()
                     },
                 colorFilter = ColorFilter.tint(Color.DarkGray)
             )
