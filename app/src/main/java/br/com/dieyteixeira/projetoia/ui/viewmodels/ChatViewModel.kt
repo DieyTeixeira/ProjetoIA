@@ -26,6 +26,14 @@ import java.io.ByteArrayOutputStream
 
 class ChatViewModel : ViewModel() {
 
+    // Estado do comprimento do texto
+    private val _textLength = MutableStateFlow(0)
+    val textLength: StateFlow<Int> get() = _textLength
+
+    // Estado de conclusão do texto
+    private val _isTextComplete = MutableStateFlow(false)
+    val isTextComplete: StateFlow<Boolean> get() = _isTextComplete
+
     var selectedOption by mutableStateOf("Flash")
         private set
 
@@ -67,7 +75,11 @@ class ChatViewModel : ViewModel() {
         content: String
     ) {
 
-        _messages.add(Chat(content = content, isSentByUser = true))
+        if (content.isBlank()) {
+            return  // Não envia mensagens vazias
+        }
+
+        _messages.add(Chat(content = content, bitmap = bitmap, isSentByUser = true))
         _uiState.value = UiState.Loading
 
         val chatHistory = _messages.joinToString(separator = "\n") { message ->
@@ -103,13 +115,11 @@ class ChatViewModel : ViewModel() {
         _imageBitmap.value = bitmap
     }
 
-    @Composable
-    fun ChatBubble(message: Chat) {
-        Column {
-            message.bitmap?.let { bitmap ->
-                Image(bitmap = bitmap.asImageBitmap(), contentDescription = null)
-            }
-            Text(text = message.content)
-        }
+    fun updateTextLength(length: Int) {
+        _textLength.value = length
+    }
+
+    fun setTextComplete(isComplete: Boolean) {
+        _isTextComplete.value = isComplete
     }
 }

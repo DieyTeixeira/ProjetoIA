@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.GenericShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
@@ -31,14 +33,17 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.dieyteixeira.projetoia.models.Chat
 import br.com.dieyteixeira.projetoia.ui.theme.AzulC_Balao
+import br.com.dieyteixeira.projetoia.ui.viewmodels.ChatViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @Composable
-fun ChatComponent(message: Chat) {
+fun ChatComponent(message: Chat, isLastMessage: Boolean, viewModel: ChatViewModel) {
+
     val corDoFundo = if (message.isSentByUser) AzulC_Balao else Color.LightGray
     val corDoTexto = if (message.isSentByUser) Color.White else Color.Black
     val alinhamento = if (message.isSentByUser) Arrangement.End else Arrangement.Start
@@ -50,25 +55,12 @@ fun ChatComponent(message: Chat) {
     val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     val formattedTime = dateFormat.format(Date(message.timestamp)) // Supondo que `timestamp` seja um long
 
-    // Obtendo a imagem do usuário (se disponível)
-    val userProfileImage: Bitmap? = message.bitmap
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 15.dp),
         horizontalArrangement = alinhamento
     ) {
-        if (!message.isSentByUser && userProfileImage != null) {
-            Image(
-                bitmap = userProfileImage.asImageBitmap(),
-                contentDescription = "User Profile Image",
-                modifier = Modifier
-                    .size(40.dp)
-                    .padding(end = 8.dp),
-                contentScale = ContentScale.Crop
-            )
-        }
         Column {
             Text(
                 text = formattedTime,
@@ -90,17 +82,38 @@ fun ChatComponent(message: Chat) {
                     .padding(start = 8.dp, end = 8.dp, top = 5.dp, bottom = 5.dp)
             ) {
                 if (message.isSentByUser) {
-                    Text(
-                        text = message.content,
-                        color = corDoTexto,
-                        modifier = Modifier.padding(5.dp)
-                    )
+                    Column {
+                        message.bitmap?.let { bitmap ->
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Imagem da mensagem",
+                                modifier = Modifier
+                                    .size(200.dp)  // Defina o tamanho da imagem conforme necessário
+                                    .padding(top = 5.dp, bottom = 2.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            )
+                        }
+                        Text(
+                            text = message.content,
+                            color = corDoTexto,
+                            modifier = Modifier.padding(5.dp)
+                        )
+                    }
                 } else {
-                    TypewriterText(
-                        text = message.content,
-                        textColor = corDoTexto,
-                        modifier = Modifier.padding(5.dp)
-                    )
+//                    if (isLastMessage) {
+//                        TypewriterText(
+//                            text = message.content,
+//                            textColor = corDoTexto,
+//                            modifier = Modifier.padding(5.dp),
+//                            viewModel = viewModel // Passe o ViewModel
+//                        )
+//                    } else {
+                        Text(
+                            text = message.content,
+                            color = corDoTexto,
+                            modifier = Modifier.padding(5.dp)
+                        )
+//                    }
                 }
             }
         }

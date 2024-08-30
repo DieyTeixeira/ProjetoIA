@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.collectAsState
 import android.provider.MediaStore
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,6 +45,7 @@ import br.com.dieyteixeira.projetoia.ui.components.SwitchButton
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import com.google.ai.client.generativeai.Chat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,19 +53,22 @@ fun ChatScreen(
     chatViewModel: ChatViewModel = viewModel(),
     onCaptureImage: () -> Unit
 ) {
-    val context = LocalContext.current
     val messages by remember { mutableStateOf(chatViewModel.messages) }
-    val uiState by chatViewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val keyboardController = LocalSoftwareKeyboardController.current
-    val coroutineScope = rememberCoroutineScope()
     val switchState by chatViewModel.switchState.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     val selectedOption by remember { derivedStateOf { chatViewModel.selectedOption } }
     val imageBitmap by chatViewModel.imageBitmap.collectAsState() // Estado para a imagem capturada
 
+    Log.e("ChatScreen", "messagesSize: ${messages.size}")
+
+    // Rolar para o final da lista quando novas mensagens são adicionadas
     LaunchedEffect(messages.size) {
-        listState.animateScrollToItem(messages.size - 1)
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size)
+        }
+        Log.e("ChatScreen", "entrou no launchedeffect")
     }
 
     Column(
@@ -176,13 +181,16 @@ fun ChatScreen(
 
         // Lista de mensagens
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 5.dp)
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+            verticalArrangement = Arrangement.Bottom, // Alinha os itens no fundo da tela
         ) {
             items(messages) { message ->
-                ChatComponent(message)
+                val isLastMessage = message == messages.lastOrNull()
+                ChatComponent(message = message, isLastMessage = isLastMessage, viewModel = chatViewModel)
             }
         }
 
@@ -204,26 +212,18 @@ fun ChatScreen(
                         .height(120.dp) // Ajuste conforme necessário
                         .padding(8.dp)
                 )
-//                Box(
-//                    modifier = Modifier
-//                        .size(24.dp)
-//                        .background(Color.White, shape = RoundedCornerShape(12.dp))
-//                        .align(Alignment.TopEnd)
-//                        .padding(top = 4.dp, end = 4.dp)
-//                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_close),
-                        contentDescription = "Remover Imagem",
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 4.dp, end = 4.dp)
-                            .size(16.dp)
-                            .clickable {
-                                chatViewModel.setImageBitmap(null)
-                            },
+                Image(
+                    painter = painterResource(id = R.drawable.ic_close),
+                    contentDescription = "Remover Imagem",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 4.dp, end = 4.dp)
+                        .size(16.dp)
+                        .clickable {
+                            chatViewModel.setImageBitmap(null)
+                        },
                     colorFilter = ColorFilter.tint(Color.Gray)
-                    )
-//                }
+                )
             }
         }
 
@@ -281,12 +281,10 @@ fun ChatScreen(
                         .align(Alignment.Center)
                         .clickable {
                             if (messageText.isNotBlank()) {
-                                imageBitmap?.let {
-                                    chatViewModel.sendMessage(
-                                        bitmap = it,
-                                        content = messageText
-                                    )
-                                }
+                                chatViewModel.sendMessage(
+                                    bitmap = imageBitmap,
+                                    content = messageText
+                                )
                                 messageText = ""
                                 chatViewModel.setImageBitmap(null)
                                 keyboardController?.hide()
