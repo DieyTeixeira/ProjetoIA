@@ -37,11 +37,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.dieyteixeira.projetoia.ui.components.ChatComponent
 import br.com.dieyteixeira.projetoia.ui.theme.AzulCabecalho
-import br.com.dieyteixeira.projetoia.ui.viewmodels.ChatViewModel
+
 import br.com.dieyteixeira.projetoia.ui.components.SwitchButton
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.zIndex
+import br.com.dieyteixeira.projetoia.ui.viewmodels.ChatViewModel
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
